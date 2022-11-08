@@ -11,11 +11,9 @@ app.use(express.json());
 //
 //
 // get link by uri
-// const uri = "mongodb://localhost:27017";
-// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.jatbrrj.mongodb.net/?retryWrites=true&w=majority`;
-// console.log(uri);
+const uri = "mongodb://localhost:27017";
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.vllpwyl.mongodb.net/?retryWrites=true&w=majority`;
+// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.vllpwyl.mongodb.net/?retryWrites=true&w=majority`;
 // call mongo db client
 const client = new MongoClient(uri);
 
@@ -84,6 +82,65 @@ const verifyJWT = (req, res, next) => {
 };
 //
 //
+// STORE SINGLE USER IN DB
+//
+// end point to post single user
+app.post("/user", async (req, res) => {
+  // check user exist or not in db by email
+  const { email } = req.body;
+
+  // if this user doesn't has any account, then create one
+
+  try {
+    const existingEmail = await usersCollection.findOne({ email: email });
+
+    if (existingEmail) {
+      res.send({
+        success: false,
+        message: "This Email ID has an account",
+      });
+      return;
+    }
+    const result = await usersCollection.insertOne(req.body); // post data
+    // console.log(result);
+    // success post data
+    if (result.insertedId) {
+      res.send({
+        success: true,
+        userId: result.insertedId,
+        message: `Successfully data inserted with id ${result.insertedId}`,
+      });
+    } else {
+      // fail post data
+      res.send({
+        success: false,
+        message: "Data insert fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    console.log(error.message);
+    res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 app.post("/log", async (req, res) => {
   try {
     const result = await logCollection.insertOne(req.body); // post data
@@ -111,37 +168,6 @@ app.post("/log", async (req, res) => {
     });
   }
 });
-//
-//
-// end point to post single user
-app.post("/user", async (req, res) => {
-  try {
-    const result = await usersCollection.insertOne(req.body); // post data
-    // console.log(result);
-    // success post data
-    if (result.insertedId) {
-      res.send({
-        success: true,
-        userId: result.insertedId,
-        message: `Successfully data inserted with id ${result.insertedId}`,
-      });
-    } else {
-      // fail post data
-      res.send({
-        success: false,
-        message: "Data insert fail!",
-      });
-    }
-  } catch (error) {
-    // fail post data
-    console.log(error.message);
-    res.send({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-//
 //
 // end point to get data
 // end point to get all data
