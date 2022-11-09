@@ -223,7 +223,6 @@ app.post("/service", verifyJWT, async (req, res) => {
     }
   } catch (error) {
     // fail post data
-    console.log(error.message);
     return res.send({
       success: false,
       message: error.message,
@@ -233,8 +232,9 @@ app.post("/service", verifyJWT, async (req, res) => {
 
 //
 //
-// get by single service user
-app.get("/service/:id", verifyJWT, async (req, res) => {
+// get by single service user 
+// WILL JWT ADD LATER AFTER UPDATE
+app.get("/service/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const service = await serviceCollection.findOne({ _id: ObjectId(id) });
