@@ -1,13 +1,16 @@
 const express = require("express");
 const cors = require("cors"); // cors middleware
 require("dotenv").config(); // to reason of security
+const cloudinary = require("cloudinary").v2;
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb"); // Mongo DB
 const app = express();
 const port = process.env.PORT || 5000; // call port where run the server
 // middleware
 app.use(cors());
-app.use(express.json());
+// app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb" }));
 //
 //
 // get link by uri
@@ -31,7 +34,22 @@ dbConnect();
 //
 // call multiple collection which you want to use
 const usersCollection = client.db("devsking-assignment").collection("users");
+const serviceCollection = client.db("devsking-assignment").collection("services");
 const logCollection = client.db("devsking-assignment").collection("log");
+//
+//
+//
+// Cloudinary API config
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
+//
+//
+//
+//
 //
 //
 //
@@ -129,6 +147,88 @@ app.post("/user", async (req, res) => {
 //
 //
 //
+// to verify authorization get current uaser information, becasue all uers doensont register by social
+
+//
+// SERVICE by pagination
+// http://localhost:5000/userspagination?page=0&size=20
+app.get("/services", verifyJWT, async (req, res) => {
+  const currentPage = parseInt(req.query.page);
+  const itemsPerPage = parseInt(req.query.size);
+  const userId = req.query.uid;
+  email: req.query.email;
+  console.log(userId);
+  // req.query.email
+  const query = {};
+
+  try {
+    const cursor = serviceCollection.find({ uid: req.query.uid }).sort({ _id: -1 });
+    const services = await cursor
+      .skip((currentPage - 1) * itemsPerPage)
+      .limit(itemsPerPage)
+      .toArray(); // post data
+    // number of row count inside this collection
+    const totalItems = await serviceCollection.countDocuments({ uid: req.query.uid });
+
+    // success get data data
+    res.send({
+      success: true,
+      message: `Successfully data received`,
+      data: { services, totalItems }, // send responce with quantity and data
+    });
+  } catch (error) {
+    // fail post data
+    console.log(error.message);
+    res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+//
+//
+//
+//
+//
+// STORE SERVICE with FUN
+//
+app.post("/service", verifyJWT, async (req, res) => {
+  const { thumbnail } = req.body;
+  const uploadedThumbnail = await cloudinary.uploader.upload(thumbnail, { folder: "dev/devsking/services" });
+
+  const photoUrl = uploadedThumbnail.secure_url;
+
+  const service = req.body;
+  service["thumbnail"] = photoUrl;
+  console.log(service);
+
+  try {
+    const result = await serviceCollection.insertOne(service); // post data
+
+    // success post data
+    if (result.insertedId) {
+      res.send({
+        success: true,
+        insertedId: result.insertedId,
+        message: `Successfully data inserted with id ${result.insertedId}`,
+      });
+    } else {
+      // fail post data
+      res.send({
+        success: false,
+        message: "Data insert fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    console.log(error.message);
+    res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 //
 //
 //
@@ -137,8 +237,7 @@ app.post("/user", async (req, res) => {
 //
 //
 //
-//
-//
+
 //
 //
 app.post("/log", async (req, res) => {
@@ -234,6 +333,9 @@ app.get("/userspagination", async (req, res) => {
     });
   }
 });
+//
+//
+//
 //
 //
 //
