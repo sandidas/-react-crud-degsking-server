@@ -10,7 +10,8 @@ const port = process.env.PORT || 5000; // call port where run the server
 app.use(cors());
 // app.use(express.json());
 app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb" }));
+// app.use(express.urlencoded({ limit: "50mb" }));
+// app.use(express.urlencoded({ extended: true })); //
 //
 //
 // get link by uri
@@ -57,17 +58,17 @@ cloudinary.config({
 app.post("/jwt", async (req, res) => {
   try {
     const user = req.body;
-    const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "2d" });
 
     if (token) {
-      res.send({
+      return res.send({
         success: true,
         token: token,
         message: "Successfully token generated",
       });
     } else {
       // fail post data
-      res.send({
+      return res.send({
         success: false,
         message: "Token generate fail!",
       });
@@ -83,14 +84,14 @@ const verifyJWT = (req, res, next) => {
   // console.log(authorization);
 
   if (!authorization) {
-    res.status(401).send({
+    return res.status(401).send({
       message: "Unauthorized Access",
     });
   }
   const token = authorization.split(" ")[1]; // after split will get an array, after that we are taking array 1 key's value inside token variable.
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
     if (err) {
-      res.status(401).send({
+      return res.status(401).send({
         message: "Unauthorized Access",
       });
     }
@@ -113,7 +114,7 @@ app.post("/user", async (req, res) => {
     const existingEmail = await usersCollection.findOne({ email: email });
 
     if (existingEmail) {
-      res.send({
+      return res.send({
         success: false,
         message: "This Email ID has an account",
       });
@@ -123,14 +124,14 @@ app.post("/user", async (req, res) => {
     // console.log(result);
     // success post data
     if (result.insertedId) {
-      res.send({
+      return res.send({
         success: true,
         userId: result.insertedId,
         message: `Successfully data inserted with id ${result.insertedId}`,
       });
     } else {
       // fail post data
-      res.send({
+      return res.send({
         success: false,
         message: "Data insert fail!",
       });
@@ -138,7 +139,7 @@ app.post("/user", async (req, res) => {
   } catch (error) {
     // fail post data
     console.log(error.message);
-    res.send({
+    return res.send({
       success: false,
       message: error.message,
     });
@@ -151,13 +152,11 @@ app.post("/user", async (req, res) => {
 
 //
 // SERVICE by pagination
-// http://localhost:5000/userspagination?page=0&size=20
 app.get("/services", verifyJWT, async (req, res) => {
   const currentPage = parseInt(req.query.page);
   const itemsPerPage = parseInt(req.query.size);
   const userId = req.query.uid;
   email: req.query.email;
-  console.log(userId);
   // req.query.email
   const query = {};
 
@@ -171,7 +170,7 @@ app.get("/services", verifyJWT, async (req, res) => {
     const totalItems = await serviceCollection.countDocuments({ uid: req.query.uid });
 
     // success get data data
-    res.send({
+    return res.send({
       success: true,
       message: `Successfully data received`,
       data: { services, totalItems }, // send responce with quantity and data
@@ -179,13 +178,12 @@ app.get("/services", verifyJWT, async (req, res) => {
   } catch (error) {
     // fail post data
     console.log(error.message);
-    res.send({
+    return res.send({
       success: false,
       message: error.message,
     });
   }
 });
-//
 //
 //
 //
@@ -200,21 +198,21 @@ app.post("/service", verifyJWT, async (req, res) => {
 
   const service = req.body;
   service["thumbnail"] = photoUrl;
-  console.log(service);
+  // console.log(service);
 
   try {
     const result = await serviceCollection.insertOne(service); // post data
 
     // success post data
     if (result.insertedId) {
-      res.send({
+      return res.send({
         success: true,
         insertedId: result.insertedId,
         message: `Successfully data inserted with id ${result.insertedId}`,
       });
     } else {
       // fail post data
-      res.send({
+      return res.send({
         success: false,
         message: "Data insert fail!",
       });
@@ -222,7 +220,7 @@ app.post("/service", verifyJWT, async (req, res) => {
   } catch (error) {
     // fail post data
     console.log(error.message);
-    res.send({
+    return res.send({
       success: false,
       message: error.message,
     });
@@ -231,37 +229,156 @@ app.post("/service", verifyJWT, async (req, res) => {
 
 //
 //
+// get by single service user
+app.get("/service/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const service = await serviceCollection.findOne({ _id: ObjectId(id) });
+    if (service?._id) {
+      return res.send({
+        success: true,
+        data: service,
+        message: "Data found",
+      });
+    } else {
+      return res.send({
+        success: false,
+        message: "Data not found! fetching...",
+      });
+    }
+  } catch (error) {
+    return res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
 //
 //
-//
-//
-//
-//
+app.patch("/service/:id", async (req, res) => {
+  const { id } = req.params;
 
+  // cloudinary image service
+  const { thumbnail } = req.body;
+  const uploadedThumbnail = await cloudinary.uploader.upload(thumbnail, { folder: "dev/devsking/services" });
+  // generate phot url from cloudinary
+  const photoUrl = uploadedThumbnail.secure_url;
+
+  const contet = req.body;
+  contet["thumbnail"] = photoUrl;
+
+  try {
+    const service = await serviceCollection.updateOne({ _id: ObjectId(id) }, { $set: contet });
+    console.log(service);
+
+    if (service.matchedCount) {
+      console.log("success");
+      return res.send({
+        success: true,
+        data: service,
+        message: `Successfully updated`,
+      });
+    } else {
+      return res.send({
+        success: false,
+        error: "Update fail!",
+      });
+    }
+  } catch (error) {
+    return res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+//
+// // |||||||||||||||| COMPLETED
+//
+// delete
+app.delete("/service/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const search = await serviceCollection.findOne({ _id: ObjectId(id) });
+    if (!search?._id) {
+      return res.send({
+        success: false,
+        error: "Data doesn't exist",
+      });
+      return;
+    }
+    const result = await serviceCollection.deleteOne({ _id: ObjectId(id) });
+
+    if (result.deletedCount) {
+      return res.send({
+        success: true,
+        message: `Successfully deleted`,
+      });
+    } else {
+    }
+  } catch (error) {
+    return res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+//
+// d
+// Data form public API
+app.get("/servicespublic", async (req, res) => {
+  const currentPage = parseInt(req.query.page);
+  const itemsPerPage = parseInt(req.query.size);
+
+
+  try {
+    const cursor = serviceCollection.find({}).sort({ _id: -1 });
+    const services = await cursor
+      .skip((currentPage - 1) * itemsPerPage)
+      .limit(itemsPerPage)
+      .toArray(); // post data
+    // number of row count inside this collection
+    const totalItems = await serviceCollection.countDocuments({});
+
+    // success get data data
+    return res.send({
+      success: true,
+      message: `Successfully data received`,
+      data: { services, totalItems }, // send responce with quantity and data
+    });
+  } catch (error) {
+    // fail post data
+    console.log(error.message);
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 //
 //
 app.post("/log", async (req, res) => {
   try {
     const result = await logCollection.insertOne(req.body); // post data
-    console.log(req.body);
+    // console.log(req.body);
     // success post data
     if (result.insertedId) {
-      res.send({
+      return res.send({
         success: true,
         userId: result.insertedId,
         message: `Successfully data inserted with id ${result.insertedId}`,
       });
     } else {
       // fail post data
-      res.send({
+      return res.send({
         success: false,
         message: "Data insert fail!",
       });
     }
   } catch (error) {
     // fail post data
-    console.log(error.message);
-    res.send({
+    // console.log(error.message);
+    return res.send({
       success: false,
       message: error.message,
     });
@@ -275,15 +392,15 @@ app.get("/users", async (req, res) => {
     const cursor = usersCollection.find({});
     const users = await cursor.toArray(); // post data
     // success get data data
-    res.send({
+    return res.send({
       success: true,
       message: `Successfully data received`,
       data: users,
     });
   } catch (error) {
     // fail post data
-    console.log(error.message);
-    res.send({
+    // console.log(error.message);
+    return res.send({
       success: false,
       message: error.message,
     });
@@ -300,7 +417,7 @@ app.get("/userspagination", async (req, res) => {
   /*
   it's important while send user based data to client
   if (decoded.email !== req.query.email) {
-    res.status(403).send({ message: "unauthorized access" });
+    return res.status(403).send({ message: "unauthorized access" });
   }
   */
 
@@ -319,7 +436,7 @@ app.get("/userspagination", async (req, res) => {
     // number of row count inside this collection
     const totalItems = await usersCollection.estimatedDocumentCount();
     // success get data data
-    res.send({
+    return res.send({
       success: true,
       message: `Successfully data received`,
       data: { users, totalItems }, // send responce with quantity and data
@@ -327,7 +444,7 @@ app.get("/userspagination", async (req, res) => {
   } catch (error) {
     // fail post data
     console.log(error.message);
-    res.send({
+    return res.send({
       success: false,
       message: error.message,
     });
@@ -355,7 +472,7 @@ app.get("/user", async (req, res) => {
     const cursor = usersCollection.find(query);
     const users = await cursor.toArray(); // post data
     // success get data data
-    res.send({
+    return res.send({
       success: true,
       message: `Successfully data received`,
       data: users,
@@ -363,7 +480,7 @@ app.get("/user", async (req, res) => {
   } catch (error) {
     // fail post data
     console.log(error.message);
-    res.send({
+    return res.send({
       success: false,
       message: error.message,
     });
@@ -379,7 +496,7 @@ app.delete("/user/:id", async (req, res) => {
   try {
     const user = await usersCollection.findOne({ _id: ObjectId(id) });
     if (!user?._id) {
-      res.send({
+      return res.send({
         success: false,
         error: "User doesn't exist",
       });
@@ -388,14 +505,14 @@ app.delete("/user/:id", async (req, res) => {
     const result = await usersCollection.deleteOne({ _id: ObjectId(id) });
 
     if (result.deletedCount) {
-      res.send({
+      return res.send({
         success: true,
         message: `Successfully deleted the ${user.name}`,
       });
     } else {
     }
   } catch (error) {
-    res.send({
+    return res.send({
       success: false,
       error: error.message,
     });
@@ -412,7 +529,7 @@ app.post("/user/deletemany", async (req, res) => {
   });
   const result = await usersCollection.remove({ _id: { $in: resourceOptimized } });
 
-  res.send(result);
+  return res.send(result);
   console.log(result);
   return;
   // const resData = await usersCollection.deleteMany({ _id: { $eq: search } });
@@ -421,7 +538,7 @@ app.post("/user/deletemany", async (req, res) => {
   try {
     const user = await usersCollection.filter({ _id: ObjectId(id) });
     if (!user?._id) {
-      res.send({
+      return res.send({
         success: false,
         error: "User doesn't exist",
       });
@@ -430,14 +547,14 @@ app.post("/user/deletemany", async (req, res) => {
     const result = await usersCollection.deleteMany([]);
 
     if (result.deletedCount) {
-      res.send({
+      return res.send({
         success: true,
         message: `Successfully deleted the ${user.name}`,
       });
     } else {
     }
   } catch (error) {
-    res.send({
+    return res.send({
       success: false,
       error: error.message,
     });
@@ -449,14 +566,13 @@ app.post("/user/deletemany", async (req, res) => {
 app.get("/user/:id", async (req, res) => {
   try {
     const { id } = req.params;
-
     const user = await usersCollection.findOne({ _id: ObjectId(id) });
-    res.send({
+    return res.send({
       success: true,
       data: user,
     });
   } catch (error) {
-    res.send({
+    return res.send({
       success: false,
       error: error.message,
     });
@@ -473,19 +589,19 @@ app.patch("/user/:id", async (req, res) => {
 
     console.log(result);
     if (result.matchedCount) {
-      res.send({
+      return res.send({
         userId: result.insertedId,
         success: true,
         message: `successfully updated ${req.body.name}`,
       });
     } else {
-      res.send({
+      return res.send({
         success: false,
         error: "Couldn't update  the user",
       });
     }
   } catch (error) {
-    res.send({
+    return res.send({
       success: false,
       error: error.message,
     });
