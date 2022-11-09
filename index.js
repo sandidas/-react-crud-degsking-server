@@ -292,7 +292,6 @@ app.patch("/service/:id", async (req, res) => {
   }
 });
 //
-// // |||||||||||||||| COMPLETED
 //
 // delete
 app.delete("/service/:id", async (req, res) => {
@@ -305,7 +304,6 @@ app.delete("/service/:id", async (req, res) => {
         success: false,
         error: "Data doesn't exist",
       });
-      return;
     }
     const result = await serviceCollection.deleteOne({ _id: ObjectId(id) });
 
@@ -329,7 +327,6 @@ app.delete("/service/:id", async (req, res) => {
 app.get("/servicespublic", async (req, res) => {
   const currentPage = parseInt(req.query.page);
   const itemsPerPage = parseInt(req.query.size);
-
 
   try {
     const cursor = serviceCollection.find({}).sort({ _id: -1 });
@@ -355,6 +352,14 @@ app.get("/servicespublic", async (req, res) => {
     });
   }
 });
+//
+//
+// get by single service for public
+
+
+
+// // |||||||||||||||| COMPLETED
+//
 //
 //
 app.post("/log", async (req, res) => {
