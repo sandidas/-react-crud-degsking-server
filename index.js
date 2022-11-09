@@ -86,6 +86,8 @@ const verifyJWT = (req, res, next) => {
   if (!authorization) {
     return res.status(401).send({
       message: "Unauthorized Access",
+      success: false,
+      status: 401,
     });
   }
   const token = authorization.split(" ")[1]; // after split will get an array, after that we are taking array 1 key's value inside token variable.
@@ -93,6 +95,8 @@ const verifyJWT = (req, res, next) => {
     if (err) {
       return res.status(401).send({
         message: "Unauthorized Access",
+        success: false,
+        status: 401,
       });
     }
     req.decoded = decoded;
@@ -230,7 +234,7 @@ app.post("/service", verifyJWT, async (req, res) => {
 //
 //
 // get by single service user
-app.get("/service/:id", async (req, res) => {
+app.get("/service/:id", verifyJWT, async (req, res) => {
   const { id } = req.params;
   try {
     const service = await serviceCollection.findOne({ _id: ObjectId(id) });
@@ -355,8 +359,6 @@ app.get("/servicespublic", async (req, res) => {
 //
 //
 // get by single service for public
-
-
 
 // // |||||||||||||||| COMPLETED
 //
