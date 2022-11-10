@@ -710,47 +710,6 @@ app.delete("/user/:id", async (req, res) => {
   }
 });
 //
-// delete multiple
-app.post("/user/deletemany", async (req, res) => {
-  const { id } = req.params;
-
-  const resource = ["636427a32230000694a67d98", "636427a82230000694a67d9a"];
-  const resourceOptimized = resource.map((re) => {
-    return ObjectId(re);
-  });
-  const result = await usersCollection.remove({ _id: { $in: resourceOptimized } });
-
-  return res.send(result);
-  console.log(result);
-  return;
-  // const resData = await usersCollection.deleteMany({ _id: { $eq: search } });
-  // const result = await usersCollection.filter({ resData });
-
-  try {
-    const user = await usersCollection.filter({ _id: ObjectId(id) });
-    if (!user?._id) {
-      return res.send({
-        success: false,
-        error: "User doesn't exist",
-      });
-      return;
-    }
-    const result = await usersCollection.deleteMany([]);
-
-    if (result.deletedCount) {
-      return res.send({
-        success: true,
-        message: `Successfully deleted the ${user.name}`,
-      });
-    } else {
-    }
-  } catch (error) {
-    return res.send({
-      success: false,
-      error: error.message,
-    });
-  }
-});
 //
 //
 // get individual
