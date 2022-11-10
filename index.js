@@ -36,6 +36,8 @@ dbConnect();
 // call multiple collection which you want to use
 const usersCollection = client.db("devsking-assignment").collection("users");
 const serviceCollection = client.db("devsking-assignment").collection("services");
+const reviewsCollection = client.db("devsking-assignment").collection("reviews");
+
 const logCollection = client.db("devsking-assignment").collection("log");
 //
 //
@@ -155,7 +157,7 @@ app.post("/user", async (req, res) => {
 // to verify authorization get current uaser information, becasue all uers doensont register by social
 
 //
-// SERVICE by pagination
+// SERVICE by pagination user
 app.get("/services", verifyJWT, async (req, res) => {
   const currentPage = parseInt(req.query.page);
   const itemsPerPage = parseInt(req.query.size);
@@ -232,9 +234,9 @@ app.post("/service", verifyJWT, async (req, res) => {
 
 //
 //
-// get by single service user 
+// get by single service user
 // WILL JWT ADD LATER AFTER UPDATE
-app.get("/service/:id", async (req, res) => {
+app.get("/service/:id", verifyJWT, async (req, res) => {
   const { id } = req.params;
   try {
     const service = await serviceCollection.findOne({ _id: ObjectId(id) });
@@ -326,7 +328,53 @@ app.delete("/service/:id", async (req, res) => {
   }
 });
 //
-// d
+// store review for logged in user
+app.post("/storereview", async (req, res) => {
+  const review = req.body;
+  const { serviceId } = req.body;
+  try {
+    const result = await reviewsCollection.insertOne(review); // post data
+
+    const service = await serviceCollection.findOne({ _id: ObjectId(serviceId) });
+
+    if (!service.reviewsCount) {
+      service["reviewsCount"] = 0;
+      service["ratingsCount"] = 0;
+      service["ratingsAverage"] = 0;
+    }
+    service["reviewsCount"] = service.reviewsCount + 1;
+    service["ratingsCount"] = service.ratingsCount + service.ratingsCount;
+    service["ratingsAverage"] = service.ratingsCount / service.reviewsCount;
+    console.log("review", result);
+    console.log("serv", service);
+
+    const ratingResult = await serviceCollection.updateOne({ _id: ObjectId(serviceId) }, { $set: service });
+
+    if (result.insertedId && ratingResult.modifiedCount) {
+      return res.send({
+        success: true,
+        insertedId: result.insertedId,
+        message: "Successfully ratings submitted",
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Fail to add!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+//
+//
+//
+//
 // Data form public API
 app.get("/servicespublic", async (req, res) => {
   const currentPage = parseInt(req.query.page);
@@ -359,7 +407,43 @@ app.get("/servicespublic", async (req, res) => {
 //
 //
 // get by single service for public
+app.get("/serviceandreview/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const service = await serviceCollection.findOne({ _id: ObjectId(id) });
+    // const cursor =  reviewsCollection.find({serviceId: id}).sort({'_id': -1});
+    // const reviews = await cursor.toArray();
 
+    const reviews = reviewsCollection.aggregate([
+      {
+        $lookup: {
+          from: "usersCollection",
+          localField: "uid",
+          foreignField: "uid",
+          as: "user",
+        },
+      },
+    ]);
+
+    if (service?._id) {
+      return res.send({
+        success: true,
+        data: { service, reviews },
+        message: "Data found",
+      });
+    } else {
+      return res.send({
+        success: false,
+        message: "Data not found! fetching...",
+      });
+    }
+  } catch (error) {
+    return res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
 // // |||||||||||||||| COMPLETED
 //
 //
