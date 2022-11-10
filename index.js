@@ -341,7 +341,6 @@ app.post("/storereview", async (req, res) => {
 
     const result = await reviewsCollection.insertOne(review); // post data
    
-
     const service = await serviceCollection.findOne({ _id: ObjectId(serviceId) });
 
     if (!service.reviewsCount) {
