@@ -193,6 +193,42 @@ app.get("/services", verifyJWT, async (req, res) => {
 //
 //
 //
+
+//
+// SERVICE by pagination user
+app.get("/reviews", async (req, res) => {
+  const currentPage = parseInt(req.query.page);
+  const itemsPerPage = parseInt(req.query.size);
+  const userId = req.query.uid;
+  email: req.query.email;
+  // req.query.email
+  const query = {};
+
+  try {
+    const cursor = reviewsCollection.find({ uid: req.query.uid }).sort({ _id: -1 });
+    const reviews = await cursor
+      .skip((currentPage - 1) * itemsPerPage)
+      .limit(itemsPerPage)
+      .toArray(); // post data
+    // number of row count inside this collection
+   
+    const totalItems = await reviewsCollection.countDocuments({ uid: req.query.uid });
+
+    // success get data data
+    return res.send({
+      success: true,
+      message: `Successfully data received`,
+      data: { reviews, totalItems }, // send responce with quantity and data
+    });
+  } catch (error) {
+    // fail post data
+    console.log(error.message);
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 //
 // STORE SERVICE with FUN
 //
@@ -340,7 +376,7 @@ app.post("/storereview", async (req, res) => {
     review["photoUrl"] = userInfo.photoURL;
 
     const result = await reviewsCollection.insertOne(review); // post data
-   
+
     const service = await serviceCollection.findOne({ _id: ObjectId(serviceId) });
 
     if (!service.reviewsCount) {
