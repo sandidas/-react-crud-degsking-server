@@ -211,7 +211,7 @@ app.get("/reviews", async (req, res) => {
       .limit(itemsPerPage)
       .toArray(); // post data
     // number of row count inside this collection
-   
+
     const totalItems = await reviewsCollection.countDocuments({ uid: req.query.uid });
 
     // success get data data
@@ -336,7 +336,7 @@ app.patch("/service/:id", async (req, res) => {
 //
 //
 // delete
-app.delete("/service/:id", async (req, res) => {
+app.delete("/service/:id", verifyJWT, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -412,6 +412,66 @@ app.post("/storereview", async (req, res) => {
   }
 });
 //
+//
+// delete
+app.delete("/review/:id", verifyJWT, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const search = await reviewsCollection.findOne({ _id: ObjectId(id) });
+    if (!search?._id) {
+      return res.send({
+        success: false,
+        error: "Data doesn't exist",
+      });
+    }
+    const result = await reviewsCollection.deleteOne({ _id: ObjectId(id) });
+
+    if (result.deletedCount) {
+      return res.send({
+        success: true,
+        message: `Successfully deleted`,
+      });
+    } else {
+    }
+  } catch (error) {
+    return res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+//
+//
+//
+//
+
+//
+app.patch("/review/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const review = await reviewsCollection.updateOne({ _id: ObjectId(id) }, { $set: req.body });
+
+    if (review.matchedCount) {
+      console.log("success");
+      return res.send({
+        success: true,
+        data: review,
+        message: `Successfully updated`,
+      });
+    } else {
+      return res.send({
+        success: false,
+        error: "Update fail!",
+      });
+    }
+  } catch (error) {
+    return res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
 //
 //
 //
