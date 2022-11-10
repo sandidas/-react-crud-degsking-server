@@ -331,9 +331,16 @@ app.delete("/service/:id", async (req, res) => {
 // store review for logged in user
 app.post("/storereview", async (req, res) => {
   const review = req.body;
-  const { serviceId } = req.body;
+  const { serviceId, uid } = req.body;
+
   try {
+    // get photo url from user collection
+    const userInfo = await usersCollection.findOne({ uid: uid });
+    console.log("user", userInfo);
+    review["photoUrl"] = userInfo.photoURL;
+
     const result = await reviewsCollection.insertOne(review); // post data
+   
 
     const service = await serviceCollection.findOne({ _id: ObjectId(serviceId) });
 
@@ -343,10 +350,8 @@ app.post("/storereview", async (req, res) => {
       service["ratingsAverage"] = 0;
     }
     service["reviewsCount"] = service.reviewsCount + 1;
-    service["ratingsCount"] = service.ratingsCount + service.ratingsCount;
+    service["ratingsCount"] = service.ratingsCount + review.rating;
     service["ratingsAverage"] = service.ratingsCount / service.reviewsCount;
-    console.log("review", result);
-    console.log("serv", service);
 
     const ratingResult = await serviceCollection.updateOne({ _id: ObjectId(serviceId) }, { $set: service });
 
@@ -411,19 +416,19 @@ app.get("/serviceandreview/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const service = await serviceCollection.findOne({ _id: ObjectId(id) });
-    // const cursor =  reviewsCollection.find({serviceId: id}).sort({'_id': -1});
-    // const reviews = await cursor.toArray();
+    const cursor = reviewsCollection.find({ serviceId: id }).sort({ _id: -1 });
+    const reviews = await cursor.toArray();
 
-    const reviews = reviewsCollection.aggregate([
-      {
-        $lookup: {
-          from: "usersCollection",
-          localField: "uid",
-          foreignField: "uid",
-          as: "user",
-        },
-      },
-    ]);
+    // const reviews = reviewsCollection.aggregate([
+    //   {
+    //     $lookup: {
+    //       from: "usersCollection",
+    //       localField: "uid",
+    //       foreignField: "uid",
+    //       as: "user",
+    //     },
+    //   },
+    // ]);
 
     if (service?._id) {
       return res.send({
