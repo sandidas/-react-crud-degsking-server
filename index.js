@@ -17,7 +17,7 @@ app.use(express.json({ limit: "50mb" }));
 // get link by uri
 // const uri = "mongodb://localhost:27017";
 
-const uri = `mongodb+srv://kingsdev:3wkPBxht1d2m0HEa@cluster0.vllpwyl.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.vllpwyl.mongodb.net/?retryWrites=true&w=majority`;
 // call mongo db client
 const client = new MongoClient(uri);
 
