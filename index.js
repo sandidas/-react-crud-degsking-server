@@ -15,9 +15,9 @@ app.use(express.json({ limit: "50mb" }));
 //
 //
 // get link by uri
-const uri = "mongodb://localhost:27017";
+// const uri = "mongodb://localhost:27017";
 
-// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.vllpwyl.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.vllpwyl.mongodb.net/?retryWrites=true&w=majority`;
 // call mongo db client
 const client = new MongoClient(uri);
 
@@ -514,17 +514,6 @@ app.get("/serviceandreview/:id", async (req, res) => {
     const cursor = reviewsCollection.find({ serviceId: id }).sort({ _id: -1 });
     const reviews = await cursor.toArray();
 
-    // const reviews = reviewsCollection.aggregate([
-    //   {
-    //     $lookup: {
-    //       from: "usersCollection",
-    //       localField: "uid",
-    //       foreignField: "uid",
-    //       as: "user",
-    //     },
-    //   },
-    // ]);
-
     if (service?._id) {
       return res.send({
         success: true,
@@ -601,16 +590,10 @@ app.get("/users", async (req, res) => {
 //
 //
 // users by pagination
-// http://localhost:5000/userspagination?page=0&size=20
+// https://server-side-xi.vercel.app/userspagination?page=0&size=20
 app.get("/userspagination", async (req, res) => {
-  // const decoded = req.decoded;
-  // console.log("inside api", decoded);
-  /*
-  it's important while send user based data to client
-  if (decoded.email !== req.query.email) {
-    return res.status(403).send({ message: "unauthorized access" });
-  }
-  */
+
+
 
   const currentPage = parseInt(req.query.page);
   const itemsPerPage = parseInt(req.query.size);
@@ -648,7 +631,7 @@ app.get("/userspagination", async (req, res) => {
 //
 //
 // get by query
-// example: http://localhost:5000/user?email=${user.email}
+// example: https://server-side-xi.vercel.app/user?email=${user.email}
 // ?email=adfadf@gmail.com
 app.get("/user", async (req, res) => {
   // console.log(req.query);
