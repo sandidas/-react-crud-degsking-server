@@ -15,9 +15,11 @@ app.use(express.json({ limit: "50mb" }));
 //
 //
 // get link by uri
-// const uri = "mongodb://localhost:27017";
+const uri = "mongodb://localhost:27017";
+// https://server-side-xi.vercel.app/
+// http://localhost:5000/
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.vllpwyl.mongodb.net/?retryWrites=true&w=majority`;
+// const uri = "mongodb+srv://kingsdev:3wkPBxht1d2m0HEa@cluster0.vllpwyl.mongodb.net/?retryWrites=true&w=majority";
 // call mongo db client
 const client = new MongoClient(uri);
 
@@ -144,7 +146,7 @@ app.post("/user", async (req, res) => {
     }
   } catch (error) {
     // fail post data
-    console.log(error.message);
+    // console.log(error.message);
     return res.send({
       success: false,
       message: error.message,
@@ -183,7 +185,7 @@ app.get("/services", verifyJWT, async (req, res) => {
     });
   } catch (error) {
     // fail post data
-    console.log(error.message);
+    //  console.log(error.message);
     return res.send({
       success: false,
       message: error.message,
@@ -222,7 +224,7 @@ app.get("/reviews", async (req, res) => {
     });
   } catch (error) {
     // fail post data
-    console.log(error.message);
+    //  console.log(error.message);
     return res.send({
       success: false,
       message: error.message,
@@ -311,10 +313,10 @@ app.patch("/service/:id", async (req, res) => {
 
   try {
     const service = await serviceCollection.updateOne({ _id: ObjectId(id) }, { $set: contet });
-    console.log(service);
+    // console.log(service);
 
     if (service.matchedCount) {
-      console.log("success");
+      //  console.log("success");
       return res.send({
         success: true,
         data: service,
@@ -372,7 +374,7 @@ app.post("/storereview", async (req, res) => {
   try {
     // get photo url from user collection
     const userInfo = await usersCollection.findOne({ uid: uid });
-    console.log("user", userInfo);
+    // console.log("user", userInfo);
     review["photoUrl"] = userInfo.photoURL;
 
     const result = await reviewsCollection.insertOne(review); // post data
@@ -453,7 +455,7 @@ app.patch("/review/:id", async (req, res) => {
     const review = await reviewsCollection.updateOne({ _id: ObjectId(id) }, { $set: req.body });
 
     if (review.matchedCount) {
-      console.log("success");
+      //  console.log("success");
       return res.send({
         success: true,
         data: review,
@@ -497,7 +499,7 @@ app.get("/servicespublic", async (req, res) => {
     });
   } catch (error) {
     // fail post data
-    console.log(error.message);
+    // console.log(error.message);
     return res.send({
       success: false,
       message: error.message,
@@ -590,11 +592,8 @@ app.get("/users", async (req, res) => {
 //
 //
 // users by pagination
-// https://server-side-xi.vercel.app/userspagination?page=0&size=20
+// http://localhost:5000/userspagination?page=0&size=20
 app.get("/userspagination", async (req, res) => {
-
-
-
   const currentPage = parseInt(req.query.page);
   const itemsPerPage = parseInt(req.query.size);
   // console.log(req.headers);
@@ -617,7 +616,7 @@ app.get("/userspagination", async (req, res) => {
     });
   } catch (error) {
     // fail post data
-    console.log(error.message);
+    // console.log(error.message);
     return res.send({
       success: false,
       message: error.message,
@@ -631,7 +630,7 @@ app.get("/userspagination", async (req, res) => {
 //
 //
 // get by query
-// example: https://server-side-xi.vercel.app/user?email=${user.email}
+// example: http://localhost:5000/user?email=${user.email}
 // ?email=adfadf@gmail.com
 app.get("/user", async (req, res) => {
   // console.log(req.query);
@@ -653,7 +652,7 @@ app.get("/user", async (req, res) => {
     });
   } catch (error) {
     // fail post data
-    console.log(error.message);
+    // console.log(error.message);
     return res.send({
       success: false,
       message: error.message,
@@ -720,7 +719,7 @@ app.patch("/user/:id", async (req, res) => {
   try {
     const result = await usersCollection.updateOne({ _id: ObjectId(id) }, { $set: req.body });
 
-    console.log(result);
+    // console.log(result);
     if (result.matchedCount) {
       return res.send({
         userId: result.insertedId,
@@ -741,7 +740,26 @@ app.patch("/user/:id", async (req, res) => {
   }
 });
 //
+//
+//
+
+// Verify the server is running or not
+app.get("/", (req, res) => {
+  try {
+    res.send({
+      success: true,
+      message: "Server is running...",
+    });
+  } catch (error) {
+    console.log(error.name, error.message);
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+//
 // port Listening
 app.listen(port, () => {
-  console.log(`Listening to port ${port}`);
+  // console.log(`Listening to port ${port}`);
 });
